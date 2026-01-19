@@ -15,6 +15,7 @@ export class UI {
     this.container = new PIXI.Container();
 
     this.createSpinButton();
+    this.layout();
   }
 
   private createSpinButton(): void {
@@ -24,11 +25,6 @@ export class UI {
       );
 
       this.spinButton.anchor.set(0.5);
-      this.spinButton.x = this.app.screen.width / 2;
-      this.spinButton.y = this.app.screen.height - 50;
-      this.spinButton.width = 150;
-      this.spinButton.height = 80;
-
       this.spinButton.interactive = true;
       this.spinButton.cursor = "pointer";
 
@@ -42,6 +38,11 @@ export class UI {
     } catch (error) {
       console.error("Error creating spin button:", error);
     }
+  }
+
+  public layout(): void {
+    this.spinButton.x = 1280 / 2;
+    this.spinButton.y = 800 - 55;
   }
 
   private onSpinButtonClick(): void {

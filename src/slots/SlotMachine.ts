@@ -27,13 +27,6 @@ export class SlotMachine {
     this.reels = [];
     this.reelsContainer = new PIXI.Container();
 
-    // Center the slot machine
-    this.container.x =
-      this.app.screen.width / 2 - (SYMBOL_SIZE * SYMBOLS_PER_REEL) / 2;
-    this.container.y =
-      this.app.screen.height / 2 -
-      (REEL_HEIGHT * REEL_COUNT + REEL_SPACING * (REEL_COUNT - 1)) / 2;
-
     this.createBackground();
 
     this.createReelMask();
@@ -43,6 +36,22 @@ export class SlotMachine {
     this.createReels();
 
     this.initSpineAnimations();
+
+    this.layout();
+  }
+
+  public layout() {
+    // Center the slot machine
+    this.container.x = (1280 - this.width) / 2;
+    this.container.y = (800 - this.height) / 2;
+  }
+
+  private get width(): number {
+    return SYMBOL_SIZE * SYMBOLS_PER_REEL;
+  }
+
+  private get height(): number {
+    return REEL_HEIGHT * REEL_COUNT + REEL_SPACING * (REEL_COUNT - 1);
   }
 
   private createBackground(): void {
