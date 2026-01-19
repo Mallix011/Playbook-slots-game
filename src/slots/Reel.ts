@@ -23,28 +23,31 @@ export class Reel {
   }
 
   private createSymbols(): void {
-    // Create symbols for the reel, arranged horizontally
     for (let i = 0; i < this.symbolCount; i++) {
       const symbol = this.createRandomSymbol();
       symbol.x = i * this.symbolSize;
-      symbol.y = 0;
       this.container.addChild(symbol);
       this.symbols.push(symbol);
     }
   }
 
-  private createRandomSymbol(): PIXI.Sprite {
-    // TODO:Get a random symbol texture
-    const textureName =
+  private getRandomTexture(): PIXI.Texture {
+    const name =
       SYMBOL_TEXTURES[Math.floor(Math.random() * SYMBOL_TEXTURES.length)];
-    const texture = AssetLoader.getTexture(textureName) ?? PIXI.Texture.WHITE;
+    return AssetLoader.getTexture(name) ?? PIXI.Texture.WHITE;
+  }
 
-    // TODO:Create a sprite with the texture
-    const sprite = new PIXI.Sprite(texture);
+  private createRandomSymbol(): PIXI.Sprite {
+    const sprite = new PIXI.Sprite(this.getRandomTexture());
     sprite.width = this.symbolSize;
     sprite.height = this.symbolSize;
-
     return sprite;
+  }
+
+  private wrapSymbol(symbol: PIXI.Sprite): void {
+    const minX = Math.min(...this.symbols.map((s) => s.x));
+    symbol.x = minX - this.symbolSize;
+    symbol.texture = this.getRandomTexture();
   }
 
   public update(delta: number): void {
@@ -54,28 +57,15 @@ export class Reel {
     }
     if (!this.isSpinning && this.speed === 0) return;
 
-    // TODO:Move symbols horizontally
-    const moveX = this.speed * delta;
     for (const symbol of this.symbols) {
-      symbol.x += moveX;
-    }
-
-    for (const symbol of this.symbols) {
+      symbol.x += this.speed * delta;
       if (symbol.x >= this.symbolCount * this.symbolSize) {
-        let minX = 940;
-        for (const s of this.symbols) {
-          if (s.x < minX) minX = s.x;
-        }
-
-        symbol.x = minX - this.symbolSize;
-        const newSymbol = this.createRandomSymbol();
-        symbol.texture = newSymbol.texture;
+        this.wrapSymbol(symbol);
       }
     }
 
     if (!this.isSpinning && this.speed > 0) {
       this.speed *= GAME_CONFIG.ANIMATION.SLOWDOWN_RATE;
-
       if (this.speed < GAME_CONFIG.ANIMATION.STOP_SPEED_THRESHOLD) {
         this.speed = 0;
         this.beginSettle();
@@ -85,14 +75,8 @@ export class Reel {
 
   private beginSettle(): void {
     this.isSettling = true;
-    const sorted = [...this.symbols].sort((a, b) => a.x - b.x);
-    this.symbols = sorted;
-
-    const leftMostX = sorted[0]?.x ?? 0;
-    const baseTarget =
-      Math.round(leftMostX / this.symbolSize) * this.symbolSize;
-
-    this.settleTargets = sorted.map((_, i) => baseTarget + i * this.symbolSize);
+    this.symbols.sort((a, b) => a.x - b.x);
+    this.settleTargets = this.symbols.map((_, i) => i * this.symbolSize);
   }
 
   private updateSettle(delta: number): void {
@@ -109,28 +93,16 @@ export class Reel {
       const symbol = this.symbols[i];
       const diff = target - symbol.x;
       symbol.x += diff * t;
-      const abs = Math.abs(diff);
-      if (abs > maxError) maxError = abs;
+      maxError = Math.max(maxError, Math.abs(diff));
     }
 
     if (maxError < GAME_CONFIG.ANIMATION.SETTLE_THRESHOLD) {
       for (let i = 0; i < this.symbols.length; i++) {
         this.symbols[i].x = this.settleTargets[i];
       }
-
       this.settleTargets = null;
       this.isSettling = false;
     }
-  }
-
-  private snapToGrid(): void {
-    // TODO: Snap symbols to horizontal grid positions
-    const sorted = [...this.symbols].sort((a, b) => a.x - b.x);
-    for (let i = 0; i < sorted.length; i++) {
-      sorted[i].x = i * this.symbolSize;
-    }
-
-    this.symbols = sorted;
   }
 
   public startSpin(): void {

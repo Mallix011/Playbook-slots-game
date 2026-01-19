@@ -16,27 +16,27 @@ export class Logger {
     return level >= this.logLevel;
   }
 
-  static debug(message: string, data?: any): void {
+  static debug(message: string, ...data: any[]): void {
     if (this.shouldLog(LogLevel.DEBUG)) {
-      console.debug(`[DEBUG] ${message}`, data);
+      console.debug(`[DEBUG] ${message}`, ...data);
     }
   }
 
-  static info(message: string, data?: any): void {
+  static info(message: string, ...data: any[]): void {
     if (this.shouldLog(LogLevel.INFO)) {
-      console.info(`[INFO] ${message}`, data);
+      console.info(`[INFO] ${message}`, ...data);
     }
   }
 
-  static warn(message: string, data?: any): void {
+  static warn(message: string, ...data: any[]): void {
     if (this.shouldLog(LogLevel.WARN)) {
-      console.warn(`[WARN] ${message}`, data);
+      console.warn(`[WARN] ${message}`, ...data);
     }
   }
 
-  static error(message: string, error?: Error | any): void {
+  static error(message: string, ...error: any[]): void {
     if (this.shouldLog(LogLevel.ERROR)) {
-      console.error(`[ERROR] ${message}`, error);
+      console.error(`[ERROR] ${message}`, ...error);
     }
   }
 }

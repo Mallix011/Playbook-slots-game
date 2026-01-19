@@ -18,13 +18,13 @@ export const GAME_CONFIG = {
   // Animation settings
   ANIMATION: {
     SPIN_SPEED: 50,
-    SLOWDOWN_RATE: 0.95,
-    SETTLE_EASING: 0.25,
-    STOP_SPEED_THRESHOLD: 1,
-    SETTLE_THRESHOLD: 0.5,
+    SLOWDOWN_RATE: 0.25,
+    STOP_SPEED_THRESHOLD: 0.95,
     SPIN_DELAY: 200,
     STOP_DELAY: 400,
     FINAL_DELAY: 500,
+    SETTLE_EASING: 0.3,
+    SETTLE_THRESHOLD: 0.5,
   },
 
   // Win settings

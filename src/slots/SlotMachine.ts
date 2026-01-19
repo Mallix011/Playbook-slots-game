@@ -71,7 +71,7 @@ export class SlotMachine {
   private createReelMask(): void {
     try {
       const mask = new PIXI.Graphics();
-      mask.beginFill(0xffffff, 1);
+      mask.beginFill(0xff00ff, 1);
       mask.drawRect(-20, -20, this.width + 40, this.height + 40);
       mask.endFill();
 
@@ -143,7 +143,6 @@ export class SlotMachine {
             this.checkWin();
             this.isSpinning = false;
             eventBus.emit({ type: "SPIN_STOPPED" });
-            Logger.info("Slot spin stopped");
           }, GAME_CONFIG.ANIMATION.FINAL_DELAY);
         }
       }, i * GAME_CONFIG.ANIMATION.STOP_DELAY);
