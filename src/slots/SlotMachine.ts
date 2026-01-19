@@ -19,11 +19,13 @@ export class SlotMachine {
   private spinButton: PIXI.Sprite | null = null;
   private frameSpine: Spine | null = null;
   private winAnimation: Spine | null = null;
+  private reelsContainer: PIXI.Container;
 
   constructor(app: PIXI.Application) {
     this.app = app;
     this.container = new PIXI.Container();
     this.reels = [];
+    this.reelsContainer = new PIXI.Container();
 
     // Center the slot machine
     this.container.x =
@@ -33,6 +35,10 @@ export class SlotMachine {
       (REEL_HEIGHT * REEL_COUNT + REEL_SPACING * (REEL_COUNT - 1)) / 2;
 
     this.createBackground();
+
+    this.createReelMask();
+
+    this.container.addChild(this.reelsContainer);
 
     this.createReels();
 
@@ -56,12 +62,31 @@ export class SlotMachine {
     }
   }
 
+  private createReelMask(): void {
+    try {
+      const mask = new PIXI.Graphics();
+      mask.beginFill(0xffffff, 1);
+      mask.drawRect(
+        -20,
+        -20,
+        SYMBOL_SIZE * SYMBOLS_PER_REEL + 40,
+        REEL_HEIGHT * REEL_COUNT + REEL_SPACING * (REEL_COUNT - 1) + 40,
+      );
+      mask.endFill();
+
+      this.reelsContainer.mask = mask;
+      this.container.addChild(mask);
+    } catch (error) {
+      console.error("Error creating reel mask:", error);
+    }
+  }
+
   private createReels(): void {
     // Create each reel
     for (let i = 0; i < REEL_COUNT; i++) {
       const reel = new Reel(SYMBOLS_PER_REEL, SYMBOL_SIZE);
       reel.container.y = i * (REEL_HEIGHT + REEL_SPACING);
-      this.container.addChild(reel.container);
+      this.reelsContainer.addChild(reel.container);
       this.reels.push(reel);
     }
   }
@@ -136,6 +161,10 @@ export class SlotMachine {
 
       if (this.winAnimation) {
         // TODO: Play the win animation found in "big-boom-h" spine
+        this.winAnimation.visible = true;
+        if (this.winAnimation.state.hasAnimation("start")) {
+          this.winAnimation.state.setAnimation(0, "start", false);
+        }
       }
     }
   }
@@ -166,8 +195,10 @@ export class SlotMachine {
         this.winAnimation = new Spine(winSpineData.spineData);
 
         this.winAnimation.x =
-          (REEL_HEIGHT * REEL_COUNT + REEL_SPACING * (REEL_COUNT - 1)) / 2;
-        this.winAnimation.y = (SYMBOL_SIZE * SYMBOLS_PER_REEL) / 2;
+          (REEL_HEIGHT * REEL_COUNT + REEL_SPACING * (REEL_COUNT - 1)) / 2 +
+          this.winAnimation.width / 4;
+        this.winAnimation.y =
+          (SYMBOL_SIZE * SYMBOLS_PER_REEL) / 2 - this.winAnimation.height / 3;
 
         this.winAnimation.visible = false;
 
