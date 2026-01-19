@@ -2,6 +2,9 @@ import * as PIXI from "pixi.js";
 import { SlotMachine } from "./slots/SlotMachine";
 import { AssetLoader } from "./utils/AssetLoader";
 import { UI } from "./ui/UI";
+import { GAME_CONFIG } from "./config/GameConfig";
+import { Logger, GameError } from "./utils/Logger";
+import { eventBus, GameEvent } from "./events/EventBus";
 
 export class Game {
   private app: PIXI.Application;
@@ -10,44 +13,69 @@ export class Game {
   private assetLoader: AssetLoader;
 
   constructor() {
-    this.app = new PIXI.Application({
-      width: 1280,
-      height: 800,
-      backgroundColor: 0x1099bb,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    });
+    try {
+      this.app = new PIXI.Application({
+        width: GAME_CONFIG.DISPLAY.WIDTH,
+        height: GAME_CONFIG.DISPLAY.HEIGHT,
+        backgroundColor: GAME_CONFIG.DISPLAY.BACKGROUND_COLOR,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
 
-    const gameContainer = document.getElementById("game-container");
-    if (gameContainer) {
-      gameContainer.appendChild(this.app.view as HTMLCanvasElement);
+      this.initializeContainer();
+      this.assetLoader = new AssetLoader();
+      this.setupEventListeners();
+      this.resize();
+    } catch (error) {
+      throw new GameError(
+        "Failed to initialize game",
+        "Game.constructor",
+        error as Error,
+      );
     }
+  }
 
-    this.assetLoader = new AssetLoader();
+  private initializeContainer(): void {
+    const gameContainer = document.getElementById("game-container");
+    if (!gameContainer) {
+      throw new GameError(
+        "Game container not found",
+        "Game.initializeContainer",
+      );
+    }
+    gameContainer.appendChild(this.app.view as HTMLCanvasElement);
+  }
 
+  private setupEventListeners(): void {
     this.init = this.init.bind(this);
     this.resize = this.resize.bind(this);
-
     window.addEventListener("resize", this.resize);
-
-    this.resize();
   }
 
   public async init(): Promise<void> {
     try {
+      Logger.info("Initializing game...");
+
       await this.assetLoader.loadAssets();
+      Logger.info("Assets loaded successfully");
 
       this.slotMachine = new SlotMachine(this.app);
       this.app.stage.addChild(this.slotMachine.container);
 
-      this.ui = new UI(this.app, this.slotMachine);
+      this.ui = new UI(this.app);
       this.app.stage.addChild(this.ui.container);
 
       this.app.ticker.add(this.update.bind(this));
 
-      console.log("Game initialized successfully");
+      eventBus.emit({ type: "GAME_INITIALIZED" });
+      Logger.info("Game initialized successfully");
     } catch (error) {
-      console.error("Error initializing game:", error);
+      Logger.error("Error initializing game", error);
+      throw new GameError(
+        "Game initialization failed",
+        "Game.init",
+        error as Error,
+      );
     }
   }
 
@@ -58,22 +86,31 @@ export class Game {
   }
 
   private resize(): void {
-    if (!this.app || !this.app.renderer) return;
+    if (!this.app?.renderer) {
+      Logger.warn("Cannot resize: app or renderer not available");
+      return;
+    }
 
     const gameContainer = document.getElementById("game-container");
-    if (!gameContainer) return;
+    if (!gameContainer) {
+      Logger.warn("Cannot resize: game container not found");
+      return;
+    }
 
     const w = gameContainer.clientWidth;
     const h = gameContainer.clientHeight;
 
-    // Calculate scale to fit the container while maintaining aspect ratio
-    const scale = Math.min(w / 1280, h / 800);
+    const scale = Math.min(
+      w / GAME_CONFIG.DISPLAY.WIDTH,
+      h / GAME_CONFIG.DISPLAY.HEIGHT,
+    );
 
     this.app.stage.scale.set(scale);
-
-    // Center the stage
     this.app.renderer.resize(w, h);
     this.app.stage.position.set(w / 2, h / 2);
-    this.app.stage.pivot.set(1280 / 2, 800 / 2);
+    this.app.stage.pivot.set(
+      GAME_CONFIG.DISPLAY.WIDTH / 2,
+      GAME_CONFIG.DISPLAY.HEIGHT / 2,
+    );
   }
 }

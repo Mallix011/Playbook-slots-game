@@ -1,21 +1,27 @@
 import * as PIXI from "pixi.js";
-import { SlotMachine } from "../slots/SlotMachine";
 import { AssetLoader } from "../utils/AssetLoader";
 import { sound } from "../utils/sound";
+import { GAME_CONFIG } from "../config/GameConfig";
+import { Logger, GameError } from "../utils/Logger";
+import { eventBus, GameEvent } from "../events/EventBus";
 
 export class UI {
   public container: PIXI.Container;
   private app: PIXI.Application;
-  private slotMachine: SlotMachine;
   private spinButton!: PIXI.Sprite;
 
-  constructor(app: PIXI.Application, slotMachine: SlotMachine) {
+  constructor(app: PIXI.Application) {
     this.app = app;
-    this.slotMachine = slotMachine;
     this.container = new PIXI.Container();
 
     this.createSpinButton();
+    this.setupEventListeners();
     this.layout();
+  }
+
+  private setupEventListeners(): void {
+    eventBus.on("SPIN_STARTED", this.onSpinStarted.bind(this));
+    eventBus.on("SPIN_STOPPED", this.onSpinStopped.bind(this));
   }
 
   private createSpinButton(): void {
@@ -33,22 +39,35 @@ export class UI {
       this.spinButton.on("pointerout", this.onButtonOut.bind(this));
 
       this.container.addChild(this.spinButton);
-
-      this.slotMachine.setSpinButton(this.spinButton);
     } catch (error) {
-      console.error("Error creating spin button:", error);
+      throw new GameError(
+        "Failed to create spin button",
+        "UI.createSpinButton",
+        error as Error,
+      );
     }
   }
 
   public layout(): void {
-    this.spinButton.x = 1280 / 2;
-    this.spinButton.y = 800 - 55;
+    this.spinButton.x = GAME_CONFIG.DISPLAY.WIDTH / 2;
+    this.spinButton.y = GAME_CONFIG.DISPLAY.HEIGHT - 55;
   }
 
   private onSpinButtonClick(): void {
     sound.play("Spin button");
+    eventBus.emit({ type: "SPIN_REQUESTED" });
+  }
 
-    this.slotMachine.spin();
+  private onSpinStarted(): void {
+    this.spinButton.texture = AssetLoader.getTexture(
+      "button_spin_disabled.png",
+    );
+    this.spinButton.interactive = false;
+  }
+
+  private onSpinStopped(): void {
+    this.spinButton.texture = AssetLoader.getTexture("button_spin.png");
+    this.spinButton.interactive = true;
   }
 
   private onButtonOver(event: PIXI.FederatedPointerEvent): void {

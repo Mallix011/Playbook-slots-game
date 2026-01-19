@@ -1,19 +1,7 @@
 import * as PIXI from "pixi.js";
 import { AssetLoader } from "../utils/AssetLoader";
-
-const SYMBOL_TEXTURES = [
-  "symbol1.png",
-  "symbol2.png",
-  "symbol3.png",
-  "symbol4.png",
-  "symbol5.png",
-];
-
-const SPIN_SPEED = 50; // Pixels per frame
-const SLOWDOWN_RATE = 0.95; // Rate at which the reel slows down
-const SETTLE_EASING = 0.25;
-const STOP_SPEED_THRESHOLD = 1;
-const SETTLE_THRESHOLD = 0.5;
+import { SYMBOL_TEXTURES, GAME_CONFIG } from "../config/GameConfig";
+import { Logger, GameError } from "../utils/Logger";
 
 export class Reel {
   public container: PIXI.Container;
@@ -74,7 +62,7 @@ export class Reel {
 
     for (const symbol of this.symbols) {
       if (symbol.x >= this.symbolCount * this.symbolSize) {
-        let minX = 940; // Reel edge
+        let minX = 940;
         for (const s of this.symbols) {
           if (s.x < minX) minX = s.x;
         }
@@ -85,12 +73,10 @@ export class Reel {
       }
     }
 
-    // If we're stopping, slow down the reel
     if (!this.isSpinning && this.speed > 0) {
-      this.speed *= SLOWDOWN_RATE;
+      this.speed *= GAME_CONFIG.ANIMATION.SLOWDOWN_RATE;
 
-      // If speed is very low, stop recycling and ease into the nearest grid alignment
-      if (this.speed < STOP_SPEED_THRESHOLD) {
+      if (this.speed < GAME_CONFIG.ANIMATION.STOP_SPEED_THRESHOLD) {
         this.speed = 0;
         this.beginSettle();
       }
@@ -115,7 +101,7 @@ export class Reel {
       return;
     }
 
-    const t = Math.min(1, SETTLE_EASING * delta);
+    const t = Math.min(1, GAME_CONFIG.ANIMATION.SETTLE_EASING * delta);
     let maxError = 0;
 
     for (let i = 0; i < this.symbols.length; i++) {
@@ -127,7 +113,7 @@ export class Reel {
       if (abs > maxError) maxError = abs;
     }
 
-    if (maxError < SETTLE_THRESHOLD) {
+    if (maxError < GAME_CONFIG.ANIMATION.SETTLE_THRESHOLD) {
       for (let i = 0; i < this.symbols.length; i++) {
         this.symbols[i].x = this.settleTargets[i];
       }
@@ -149,11 +135,12 @@ export class Reel {
 
   public startSpin(): void {
     this.isSpinning = true;
-    this.speed = SPIN_SPEED;
+    this.speed = GAME_CONFIG.ANIMATION.SPIN_SPEED;
+    Logger.debug(`Reel started spinning with speed ${this.speed}`);
   }
 
   public stopSpin(): void {
     this.isSpinning = false;
-    // The reel will gradually slow down in the update method
+    Logger.debug("Reel stopping - will slow down gradually");
   }
 }

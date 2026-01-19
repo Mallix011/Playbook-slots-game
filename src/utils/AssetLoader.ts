@@ -1,26 +1,7 @@
 import * as PIXI from "pixi.js";
 import { sound } from "./sound";
-
-// Asset paths
-const IMAGES_PATH = "assets/images/";
-const SPINES_PATH = "assets/spines/";
-const SOUNDS_PATH = "assets/sounds/";
-
-// Asset lists
-const IMAGES = [
-  "symbol1.png",
-  "symbol2.png",
-  "symbol3.png",
-  "symbol4.png",
-  "symbol5.png",
-  "background.png",
-  "button_spin.png",
-  "button_spin_disabled.png",
-];
-
-const SPINES = ["big-boom-h.json", "base-feature-frame.json"];
-
-const SOUNDS = ["Reel spin.webm", "win.webm", "Spin button.webm"];
+import { GAME_CONFIG, ASSET_LISTS } from "../config/GameConfig";
+import { Logger, GameError } from "./Logger";
 
 const textureCache: Record<string, PIXI.Texture> = {};
 const spineCache: Record<string, any> = {};
@@ -32,56 +13,72 @@ export class AssetLoader {
 
   public async loadAssets(): Promise<void> {
     try {
-      PIXI.Assets.addBundle(
-        "images",
-        IMAGES.map((image) => ({
-          name: image,
-          srcs: IMAGES_PATH + image,
-        })),
-      );
+      Logger.info("Starting asset loading...");
 
-      PIXI.Assets.addBundle(
-        "spines",
-        SPINES.map((spine) => ({
-          name: spine,
-          srcs: SPINES_PATH + spine,
-        })),
-      );
-
-      const imageAssets = await PIXI.Assets.loadBundle("images");
-      console.log("Images loaded successfully");
-
-      for (const [key, texture] of Object.entries(imageAssets)) {
-        textureCache[key] = texture as PIXI.Texture;
-      }
-
-      try {
-        const spineAssets = await PIXI.Assets.loadBundle("spines");
-        console.log("Spine animations loaded successfully");
-
-        for (const [key, spine] of Object.entries(spineAssets)) {
-          spineCache[key] = spine;
-        }
-      } catch (error) {
-        console.error("Error loading spine animations:", error);
-      }
-
+      await this.loadImages();
+      await this.loadSpines();
       await this.loadSounds();
-      console.log("Assets loaded successfully");
+
+      Logger.info("All assets loaded successfully");
     } catch (error) {
-      console.error("Error loading assets:", error);
-      throw error;
+      Logger.error("Failed to load assets", error);
+      throw new GameError(
+        "Asset loading failed",
+        "AssetLoader.loadAssets",
+        error as Error,
+      );
+    }
+  }
+
+  private async loadImages(): Promise<void> {
+    PIXI.Assets.addBundle(
+      "images",
+      ASSET_LISTS.IMAGES.map((image) => ({
+        name: image,
+        srcs: GAME_CONFIG.ASSETS.IMAGES_PATH + image,
+      })),
+    );
+
+    const imageAssets = await PIXI.Assets.loadBundle("images");
+    Logger.info("Images loaded successfully");
+
+    for (const [key, texture] of Object.entries(imageAssets)) {
+      textureCache[key] = texture as PIXI.Texture;
+    }
+  }
+
+  private async loadSpines(): Promise<void> {
+    PIXI.Assets.addBundle(
+      "spines",
+      ASSET_LISTS.SPINES.map((spine) => ({
+        name: spine,
+        srcs: GAME_CONFIG.ASSETS.SPINES_PATH + spine,
+      })),
+    );
+
+    try {
+      const spineAssets = await PIXI.Assets.loadBundle("spines");
+      Logger.info("Spine animations loaded successfully");
+
+      for (const [key, spine] of Object.entries(spineAssets)) {
+        spineCache[key] = spine;
+      }
+    } catch (error) {
+      Logger.warn("Some spine animations failed to load", error);
     }
   }
 
   private async loadSounds(): Promise<void> {
     try {
-      SOUNDS.forEach((soundFile) => {
-        sound.add(soundFile.split(".")[0], SOUNDS_PATH + soundFile);
+      ASSET_LISTS.SOUNDS.forEach((soundFile) => {
+        sound.add(
+          soundFile.split(".")[0],
+          GAME_CONFIG.ASSETS.SOUNDS_PATH + soundFile,
+        );
       });
+      Logger.info("Sounds loaded successfully");
     } catch (error) {
-      console.error("Error loading sounds:", error);
-      throw error;
+      Logger.warn("Some sounds failed to load", error);
     }
   }
 
