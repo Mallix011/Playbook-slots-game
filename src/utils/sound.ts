@@ -33,4 +33,18 @@ export const sound = {
       Logger.warn(`Failed to play sound: ${alias}`, error);
     }
   },
+  stop: (alias: string): void => {
+    const howl = sounds[alias];
+    if (!howl) {
+      Logger.warn(`Sound not found: ${alias}`);
+      return;
+    }
+
+    try {
+      howl.stop();
+      Logger.debug(`Stopped sound: ${alias}`);
+    } catch (error) {
+      Logger.warn(`Failed to stop sound: ${alias}`, error);
+    }
+  },
 };

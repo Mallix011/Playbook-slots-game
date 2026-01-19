@@ -139,6 +139,7 @@ export class SlotMachine {
 
         if (i === this.reels.length - 1) {
           setTimeout(() => {
+            sound.stop("Reel spin");
             this.checkWin();
             this.isSpinning = false;
             eventBus.emit({ type: "SPIN_STOPPED" });
